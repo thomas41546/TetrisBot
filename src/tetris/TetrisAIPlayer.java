@@ -104,100 +104,116 @@ public class TetrisAIPlayer {
 		return dist;
 	}
 
-	// TODO this does not work correctly!
-	// Write a function that correctly finds out if a block simply shifted
-	// Down, is the same, or was changed.
-	public boolean pieceRotated(int[][] oldState, int[][] newState) {
-
-		boolean isSame = true;
-		// check if the block just moved down by 1 normally
-
-		Point oldAvg = new Point();
-		Point newAvg = new Point();
-		double oldCount = 0, newCount = 0;
-
-		for (int y = 1; y < DROP_AREA_HEIGHT-1; y++) {
-			for (int x = 0; x < 10; x++) {
-
-				if (oldState[x][y] != 0) {
-					oldAvg.setLocation(oldAvg.x + x, oldAvg.y + y);
-					oldCount++;
-				}
-
-				if (newState[x][y] != 0) {
-					newAvg.setLocation(newAvg.x + x, newAvg.y + y);
-					newCount++;
-				}
-			}
-		}
-		oldAvg.setLocation(oldAvg.x / oldCount, oldAvg.y / oldCount);
-		newAvg.setLocation(newAvg.x / newCount, newAvg.y / newCount);
-
-		if (oldAvg.distance(newAvg) < 0.01) {
-			return false;
-		}
-
-		if (Math.abs(oldAvg.x - newAvg.x) < 0.01
-				&& Math.abs(newAvg.y - oldAvg.y)
-						- Math.floor(Math.abs(newAvg.y - oldAvg.y)) < 0.1) {
-			return false;
-		}
-
-		return true;
-	}
-	public boolean pieceTranslated(int[][] oldState, int[][] newState) {
-
-		boolean isSame = true;
-		// check if the block just moved down by 1 normally
-
-		Point oldAvg = new Point();
-		Point newAvg = new Point();
-		double oldCount = 0, newCount = 0;
-
-		for (int y = 1; y < DROP_AREA_HEIGHT-1; y++) {
-			for (int x = 0; x < 10; x++) {
-
-				if (oldState[x][y] != 0) {
-					oldAvg.setLocation(oldAvg.x + x, oldAvg.y + y);
-					oldCount++;
-				}
-
-				if (newState[x][y] != 0) {
-					newAvg.setLocation(newAvg.x + x, newAvg.y + y);
-					newCount++;
-				}
-			}
-		}
-		oldAvg.setLocation(oldAvg.x / oldCount, oldAvg.y / oldCount);
-		newAvg.setLocation(newAvg.x / newCount, newAvg.y / newCount);
-
-
-		if (Math.abs(oldAvg.x - newAvg.x) < 0.01) {
-			return false;
-		}
-
-		return true;
+	public enum DropState {
+		HIT_BOTTOM, NOT_FIND_OLD, NOT_FIND_NEW, NOT_FIND_ALL, NO_CHANGE, CHANGE
 	}
 
+	public DropState pieceRotated(int[][] oldState, int[][] newState) {
+		// find first point from bottom
+		int oldBottomBlocks = 0;
+		int newBottomBlocks = 0;
 
-	public void printMap(int[][] boardState, boolean shifted) {
+		for (int y = DROP_AREA_HEIGHT - 1; y >= 0; y--) {
+			for (int x = 0; x < 10; x++) {
 
-		for (int y = 0; y < 19; y++) {
-			if (y == 18 && shifted)
+				if (oldBottomBlocks == 0 && oldState[x][y] != 0) {
+					for (int xi = 0; xi < 10; xi++)
+						oldBottomBlocks += oldState[xi][y];
+
+					if (y == DROP_AREA_HEIGHT - 1) {
+						return DropState.HIT_BOTTOM;
+					}
+				}
+
+				if (newBottomBlocks == 0 && newState[x][y] != 0) {
+					if (y == DROP_AREA_HEIGHT - 1) {
+						return DropState.HIT_BOTTOM;
+					}
+					for (int xi = 0; xi < 10; xi++)
+						newBottomBlocks += newState[xi][y];
+				}
+				if (oldBottomBlocks != 0 && newBottomBlocks != 0)
+					break;
+			}
+			if (oldBottomBlocks != 0 && newBottomBlocks != 0)
 				break;
+		}
+
+		System.out.printf("bc %d,%d\n", oldBottomBlocks, newBottomBlocks);
+
+		// could not find a point just assume that nothing changed
+		if (oldBottomBlocks == 0 || newBottomBlocks == 0) {
+			if (oldBottomBlocks == 0 && newBottomBlocks == 0)
+				return DropState.NOT_FIND_ALL;
+			if (oldBottomBlocks == 0)
+				return DropState.NOT_FIND_OLD;
+			if (newBottomBlocks == 0)
+				return DropState.NOT_FIND_NEW;
+		}
+
+		// x rotation did not change
+		if (oldBottomBlocks == newBottomBlocks) {
+			return DropState.NO_CHANGE;
+		}
+
+		return DropState.CHANGE;
+	}
+
+	public boolean pieceTranslated(int[][] oldState, int[][] newState) {
+		// find first point from bottom
+		Point oldBottom = new Point();
+		Point newBottom = new Point();
+		boolean oldSet = false;
+		boolean newSet = false;
+
+		for (int y = DROP_AREA_HEIGHT - 1; y >= 0; y--) {
 			for (int x = 0; x < 10; x++) {
 
-				if (shifted) {
-					if (boardState[x][y + 1] != 0)
-						System.out.print("X");
-					else
-						System.out.print("_");
-				} else {
-					if (boardState[x][y] != 0)
-						System.out.print("X");
-					else
-						System.out.print("_");
+				if (!oldSet && oldState[x][y] != 0) {
+					oldBottom.setLocation(x, y);
+					oldSet = true;
 				}
+
+				if (!newSet && newState[x][y] != 0) {
+					// ignore all if our new point is on our boundary
+					if (y == DROP_AREA_HEIGHT - 1) {
+						return false;
+					}
+					newBottom.setLocation(x, y);
+					newSet = true;
+
+				}
+				if (oldSet && newSet)
+					break;
+			}
+			if (oldSet && newSet)
+				break;
+		}
+
+		// could not find a point just assume that nothing changed
+		if (!oldSet || !newSet) {
+			return false;
+		}
+
+		// x position did not change
+		if (Math.abs(oldBottom.x - newBottom.x) < 0.01) {
+			return false;
+		}
+
+		return true;
+	}
+
+	public void printMap(int[][] boardState, int yEnd) {
+
+		for (int y = 0; y < yEnd; y++) {
+
+			for (int x = 0; x < 10; x++) {
+
+				if (boardState[x][y] != 0)
+					System.out.print("X");
+				else
+					System.out.print("_");
+
 			}
 			System.out.println("");
 		}
@@ -238,7 +254,7 @@ public class TetrisAIPlayer {
 
 				float pixCount = pixelCount(rectImg);
 
-				if (pixCount > 30000) {
+				if (pixCount > 20000) {
 					boardState[x][y] = 1;
 				} else {
 					boardState[x][y] = 0;
@@ -373,51 +389,55 @@ public class TetrisAIPlayer {
 			System.out.println("need to move: " + displacement + " rotate: "
 					+ rotation);
 
+			ImageShower is = new ImageShower(null);
+			// DEBUGGGG CODE
 			while (true) {
+				Thread.sleep(100);
 				int[][] oldState = boardState();
-				int[][] newState = oldState;
+				int[][] newState = null;
+				DropState dropState;
 				do {
 					System.out.print(".");
 					Thread.sleep(100);
 					newState = boardState();
-				} while (!pieceTranslated(oldState, newState));
-				System.out.println("\nPiece translated");
+
+					dropState = pieceRotated(oldState, newState);
+
+					if (dropState == DropState.NOT_FIND_ALL) {
+						is.update(robot.createScreenCapture(gridRect));
+					}
+
+				} while (dropState == DropState.NO_CHANGE);
+
+				if (dropState == DropState.CHANGE)
+					System.out.println("\nPiece pieceRotated");
+				else
+					System.out.println(dropState.toString());
+
+				// to ignore warnings
 				if (oldState == null)
 					break;
 			}
 
 			while (rotation == 3) {
 
-				int[][] oldState = boardState();
-				int[][] newState = oldState;
-				do {
-					robot.keyPress(KeyEvent.VK_Z);
-					Thread.sleep(20);
-					newState = boardState();
-				} while (!pieceRotated(oldState, newState));
-				robot.keyRelease(KeyEvent.VK_Z);
 				Thread.sleep(KEY_TIME);
-				newState = boardState();
-				if (!pieceRotated(oldState, newState))
-					continue;
-				break;
+				System.out.println("\tright");
+				robot.keyPress(KeyEvent.VK_Z);
+				Thread.sleep(KEY_TIME);
+				robot.keyRelease(KeyEvent.VK_Z);
+				rotation = 0;
+
 			}
 
 			// rotate the piece
 			while (rotation > 0 && rotation < 3) {
 
-				int[][] oldState = boardState();
-				int[][] newState = oldState;
-				do {
-					robot.keyPress(KeyEvent.VK_UP);
-					Thread.sleep(20);
-					newState = boardState();
-				} while (!pieceRotated(oldState, newState));
-				robot.keyRelease(KeyEvent.VK_UP);
 				Thread.sleep(KEY_TIME);
-				newState = boardState();
-				if (!pieceRotated(oldState, newState))
-					continue;
+				System.out.println("\tright");
+				robot.keyPress(KeyEvent.VK_UP);
+				Thread.sleep(KEY_TIME);
+				robot.keyRelease(KeyEvent.VK_UP);
 				rotation--;
 			}
 			// now move the piece
