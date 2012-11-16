@@ -1,0 +1,20 @@
+These are files related to a Tetris AI and bot. You
+can see it in action here:
+    http://www.youtube.com/watch?v=8ewC6dZ8uw4
+
+Contents:
+	tetris/Piece.java
+		A class respresenting Tetris Pieces.
+	tetris/Tetris.java
+		A class for the Tetris game.
+	tetris/TetrisAI.java
+		A class to handle decisions made by
+		an AI player in the Tetris game.
+	tetris/TetrisAIPlayer.java
+		A class for Tetris Robots that can
+		play online Tetris games such as
+		those available at
+		tetrisfriends.com
+	tetris/TetrisFriendsPlayer.java
+		A class for a Robot which can play at
+		tetrisfriends.com.
