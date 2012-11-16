@@ -45,7 +45,8 @@ public class TetrisFriendsPlayer extends TetrisAIPlayer {
 				"orange", "lightblue" };
 		this.pieceStrings = tempStrings;
 		this.WAIT_TIME = 0;
-		this.KEY_TIME = 150;
+		this.KEY_TIME = 50;
+		this.DROP_AREA_HEIGHT = 5;
 		this.tetris = new Tetris();
 	}
 

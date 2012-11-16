@@ -288,7 +288,7 @@ public class Tetris {
 	 * Remove tetrises from the board, move all other blocks down, and t hen
 	 * increment the tetris counter.
 	 */
-	public void tetrisify() {
+	public int tetrisify() {
 		int linesCleared = 0;
 
 		for (int row = 0; row < board.length; row++) {
@@ -324,6 +324,7 @@ public class Tetris {
 		}
 
 		tetrises += linesCleared;
+		return linesCleared;
 	}
 
 }
